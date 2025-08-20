@@ -5,10 +5,6 @@
 
 #include "cuda_SimpleMatrixUtil.h"
 
-#include <cutil_inline.h>
-#include <cutil_math.h>
-
-
 #define M_DIM 3
 
 class MYEIGEN {
@@ -19,53 +15,7 @@ public:
 		return eigenSystem<3>((const float*)&m, (float*)&eigenvalues, evs, sort);
 	}
 
-	//static inline bool __device__ __host__ eigenSystem3x3(const float3x3& m, float3& eigenvalues, float3& ev0, float3& ev1, float3& ev2, bool sort = true) {
-
-	//	float3x3 eigenvectors;
-	//	bool res = eigenSystem3x3(m, (float*)&eigenvalues, eigenvectors, sort);
-	//	ev0 = eigenvectors.getRow(0);
-	//	ev1 = eigenvectors.getRow(1);
-	//	ev2 = eigenvectors.getRow(2);
-	//	return res;
-	//}
 private:
-
-
-	//static inline bool __device__ __host__ eigenSystem3x3(const float3x3& m, float* eigenvalues, float3x3& eigenvectors, bool sort = true) {
-
-	//	int num_of_required_jabobi_rotations;
-	//	float3x3 input = m;
-	//	if (!jacobi3(input.entries2, eigenvalues, eigenvectors.entries2, &num_of_required_jabobi_rotations)) {
-	//		return false;
-	//	}
-
-	//	if (sort) {
-	//		//simple selection sort
-	//		for (unsigned int i = 0; i < 3; i++) {
-	//			float currMax = 0.0f;
-	//			unsigned int currMaxIdx = (unsigned int)-1;
-	//			for (unsigned int j = i; j < 3; j++) {
-	//				if (fabsf(eigenvalues[j]) > currMax) {
-	//					currMax = fabsf(eigenvalues[j]);
-	//					currMaxIdx = j;
-	//				}
-	//			}
-
-	//			if (currMaxIdx != i && currMaxIdx != (unsigned int)-1) {
-	//				swap(eigenvalues[i], eigenvalues[currMaxIdx]);
-	//				for (unsigned int j = 0; j < 3; j++) {
-	//					//swap(eigenvectors(i, j), eigenvectors(currMaxIdx, j));
-	//					swap(eigenvectors(i,j), eigenvectors(currMaxIdx,j));
-	//				}
-	//			}
-	//		}
-	//	}
-
-	//	return true;
-	//}
-
-
-
 	template<unsigned int n>
 	static inline bool __device__ __host__ eigenSystem(const float* m, float* eigenvalues, float** eigenvectors, bool sort = true) {
 		//TODO ONLY WORKS for n==3
@@ -211,124 +161,7 @@ private:
 		}
 		return false;
 	}
-
-
-
-	//static inline __device__ __host__ bool jacobi3(float a[3][3], float d[3], float v[3][3], int* n_rot)
-	//{
-	//	int count, k, i, j;
-	//	float tresh, theta, tau, t, sum, s, h, g, c, b[3], z[3];
-
-	//	/*Initialize v to the identity matrix.*/
-	//	for (i = 0; i < 3; i++)
-	//	{
-	//		for (j = 0; j < 3; j++)
-	//			v[i][j] = 0.0f;
-	//		v[i][i] = 1.0f;
-	//	}
-
-	//	/* Initialize b and d to the diagonal of a */
-	//	for (i = 0; i < 3; i++)
-	//		b[i] = d[i] = a[i][i];
-
-	//	/* z will accumulate terms */
-	//	for (i = 0; i < 3; i++)
-	//		z[i] = 0.0f;
-
-	//	*n_rot = 0;
-
-	//	/* 50 tries */
-	//	for (count = 0; count < 50; count++)
-	//	{
-
-	//		/* sum off-diagonal elements */
-	//		sum = 0.0f;
-	//		for (i = 0; i < 2; i++)
-	//		{
-	//			for (j = i + 1; j < 3; j++)
-	//				sum += fabs(a[i][j]);
-	//		}
-
-	//		/* if converged to machine underflow */
-	//		if (sum == 0.0)
-	//			return(1);
-
-	//		/* on 1st three sweeps... */
-	//		if (count < 3)
-	//			tresh = sum * 0.2f / 9.0f;
-	//		else
-	//			tresh = 0.0f;
-
-	//		for (i = 0; i < 2; i++)
-	//		{
-	//			for (j = i + 1; j < 3; j++)
-	//			{
-	//				g = 100.0f * fabs(a[i][j]);
-
-	//				/*  after four sweeps, skip the rotation if
-	//				*   the off-diagonal element is small
-	//				*/
-	//				if (count > 3 && fabs(d[i]) + g == fabs(d[i])
-	//					&& fabs(d[j]) + g == fabs(d[j]))
-	//				{
-	//					a[i][j] = 0.0f;
-	//				}
-	//				else if (fabs(a[i][j]) > tresh)
-	//				{
-	//					h = d[j] - d[i];
-
-	//					if (fabs(h) + g == fabs(h))
-	//					{
-	//						t = a[i][j] / h;
-	//					}
-	//					else
-	//					{
-	//						theta = 0.5f * h / (a[i][j]);
-	//						t = 1.0f / (fabs(theta) +
-	//							sqrtf(1.0f + theta*theta));
-	//						if (theta < 0.0f)
-	//							t = -t;
-	//					}
-
-	//					c = 1.0f / sqrtf(1 + t*t);
-	//					s = t * c;
-	//					tau = s / (1.0f + c);
-	//					h = t * a[i][j];
-
-	//					z[i] -= h;
-	//					z[j] += h;
-	//					d[i] -= h;
-	//					d[j] += h;
-
-	//					a[i][j] = 0.0;
-
-	//					for (k = 0; k <= i - 1; k++)
-	//						CUDA_SVD_ROTATE(a, k, i, k, j)
-	//						for (k = i + 1; k <= j - 1; k++)
-	//							CUDA_SVD_ROTATE(a, i, k, k, j)
-	//							for (k = j + 1; k < 3; k++)
-	//								CUDA_SVD_ROTATE(a, i, k, j, k)
-	//								for (k = 0; k < 3; k++)
-	//									CUDA_SVD_ROTATE(v, k, i, k, j)
-	//									++(*n_rot);
-	//				}
-	//			}
-	//		}
-
-	//		for (i = 0; i < 3; i++)
-	//		{
-	//			b[i] += z[i];
-	//			d[i] = b[i];
-	//			z[i] = 0.0;
-	//		}
-	//	}
-	//	return false;
-	//}
-
 };
-
-
-
 
 
 class SVD {

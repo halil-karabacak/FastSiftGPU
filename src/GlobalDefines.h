@@ -1,0 +1,3 @@
+#pragma once
+
+#define MAX_MATCHES_PER_IMAGE_PAIR_FILTERED 100

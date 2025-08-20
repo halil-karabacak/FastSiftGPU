@@ -6,7 +6,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_STANDARD 14)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
-
 find_package(OpenCV REQUIRED)
 find_package(CUDAToolkit REQUIRED)
 
@@ -40,3 +39,7 @@ set_target_properties(SiftGPU PROPERTIES
 if(MSVC)
   target_compile_definitions(SiftGPU PRIVATE _CRT_SECURE_NO_WARNINGS NOMINMAX)
 endif()
+
+add_executable(SiftExecutable ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+
+target_link_libraries(SiftExecutable PRIVATE SiftGPU)

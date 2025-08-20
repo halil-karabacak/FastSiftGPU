@@ -20,8 +20,6 @@
 //	Please send BUG REPORTS to ccwu@cs.unc.edu
 //
 ////////////////////////////////////////////////////////////////////////////
-#include "stdafx.h"
-
 #include <string.h>
 #include <iostream>
 #include <iomanip>
@@ -29,8 +27,6 @@
 #include <algorithm>
 #include <fstream>
 #include <math.h>
-
-#include <cutil_inline.h>
 using namespace std;
 
 #include "GlobalUtil.h"
@@ -74,8 +70,8 @@ SiftPyramid::~SiftPyramid()
 	if (_inputTex) delete _inputTex;
 	if (_timer) delete _timer;
 
-	if (d_featureCount) cutilSafeCall(cudaFree(d_featureCount));
-	if (d_outDescriptorList) cutilSafeCall(cudaFree(d_outDescriptorList));
+	if (d_featureCount) cudaFree(d_featureCount);
+	if (d_outDescriptorList) cudaFree(d_outDescriptorList);
 }
 
 
@@ -350,7 +346,7 @@ void SiftPyramid::DestroyPyramidData()
 
 void SiftPyramid::DetectKeypoints(const float* d_depthData)
 {
-	cutilSafeCall(cudaMemset(d_featureCount, 0, sizeof(int) * _octave_num * param._dog_level_num));
+	cudaMemset(d_featureCount, 0, sizeof(int) * _octave_num * param._dog_level_num);
 
 	float os = _octave_min >= 0 ? float(1 << _octave_min) : 1.0f / (1 << (-_octave_min));
 	float keyLocOffset = GlobalUtil::_LoweOrigin ? 0 : 0.5f;
@@ -384,7 +380,7 @@ void SiftPyramid::DetectKeypoints(const float* d_depthData)
 		}
 	}
 
-	cutilSafeCall(cudaMemcpy(_levelFeatureNum, d_featureCount, sizeof(int) * _octave_num * param._dog_level_num, cudaMemcpyDeviceToHost));
+	cudaMemcpy(_levelFeatureNum, d_featureCount, sizeof(int) * _octave_num * param._dog_level_num, cudaMemcpyDeviceToHost);
 	_featureNum = 0;
 	for (int i = 0; i < _octave_num * param._dog_level_num; i++) {
 		_levelFeatureNum[i] = std::min(_levelFeatureNum[i], _featureTexRaw[i].GetImgWidth() * _featureTexRaw[i].GetImgHeight());
@@ -691,8 +687,8 @@ int SiftPyramid::ResizeFeatureStorage()
 	if (_levelFeatureNum == NULL)	_levelFeatureNum = new int[_octave_num * param._dog_level_num];
 	std::fill(_levelFeatureNum, _levelFeatureNum + _octave_num * param._dog_level_num, 0);
 
-	cutilSafeCall(cudaMalloc(&d_featureCount, sizeof(int) * _octave_num * param._dog_level_num));
-	cutilSafeCall(cudaMalloc(&d_outDescriptorList, sizeof(float) * 128 * GlobalUtil::_MaxLevelFeatureNum));
+	cudaMalloc(&d_featureCount, sizeof(int) * _octave_num * param._dog_level_num);
+	cudaMalloc(&d_outDescriptorList, sizeof(float) * 128 * GlobalUtil::_MaxLevelFeatureNum);
 
 	//initialize the feature texture
 	int idx = 0, n = _octave_num * param._dog_level_num;

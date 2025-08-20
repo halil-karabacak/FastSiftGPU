@@ -20,8 +20,6 @@
 //	Please send BUG REPORTS to ccwu@cs.unc.edu
 //
 ////////////////////////////////////////////////////////////////////////////
-#include "stdafx.h"
-
 #include <string.h>
 #include <iostream>
 using std::cout;

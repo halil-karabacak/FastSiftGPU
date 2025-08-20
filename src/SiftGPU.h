@@ -23,13 +23,34 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
+#include <vector_types.h>
 
 #ifndef GPU_SIFT_H
 #define GPU_SIFT_H
 
-#include <vector>
-#include "SIFTImageManager.h"
+struct SIFTKeyPoint {
+	float2 pos;
+	float scale;
+	float depth;
+};
 
+struct SIFTKeyPointDesc {
+	unsigned char feature[128];
+};
+
+struct SIFTImageGPU {
+	//int*					d_keyPointCounter;	//single counter value per image (into into global array)	//TODO we need this counter if we do multimatching
+	SIFTKeyPoint* d_keyPoints;		//array of key points (index into global array)
+	SIFTKeyPointDesc* d_keyPointDescs;	//array of key point descs (index into global array)
+};
+
+struct ImagePairMatch {
+	int* d_numMatches;		//single counter value per image
+	float* d_distances;		//array of distance (one per match)
+	uint2* d_keyPointIndices;	//array of index pair (one per match)	
+
+};
+#include <vector>
 ///////////////////////////////////////////////////////////////////
 //clss SiftParam
 //description: SIFT parameters
@@ -40,7 +61,7 @@ class SiftParam
 public:
 	SiftParam();
 	~SiftParam() {
-		SAFE_DELETE_ARRAY(_sigma);
+		delete _sigma;
 	}
 
 	void		 ParseSiftParam();

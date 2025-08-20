@@ -1535,7 +1535,7 @@ void ProgramCU::DisplayKeyBox(CuTexImage* ftex, CuTexImage* out)
 ///////////////////////////////////////////////////////////////////
 inline void CuTexImage::BindTexture(textureReference& texRef, size_t* offset)
 {
-	cutilSafeCall(cudaBindTexture(offset, &texRef, _cuData, &texRef.channelDesc, _numBytes));
+	cudaBindTexture(offset, &texRef, _cuData, &texRef.channelDesc, _numBytes);
 }
 
 inline void CuTexImage::BindTexture2D(textureReference& texRef)

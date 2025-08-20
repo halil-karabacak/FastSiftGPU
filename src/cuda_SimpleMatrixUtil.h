@@ -5,6 +5,10 @@
 
 #include <iostream>
 #include "cudaUtil.h"
+#include <math_constants.h>
+#ifndef MINF
+#define MINF (-CUDART_INF_F)
+#endif
 
 //////////////////////////////
 // float2x2
@@ -318,6 +322,18 @@ inline __device__ __host__ float2x2 matMul(const float2x3& m0, const float3x2& m
 	res.m21 = m0.m21*m1.m11+m0.m22*m1.m21+m0.m23*m1.m31;
 	res.m22 = m0.m21*m1.m12+m0.m22*m1.m22+m0.m23*m1.m32;
 	return res;
+}
+
+__host__ __device__ inline float length(const float3& v)
+{
+	return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+}
+
+__host__ __device__ inline float3& operator/=(float3& v, float s)
+{
+	float inv = 1.0f / s;
+	v.x *= inv; v.y *= inv; v.z *= inv;
+	return v;
 }
 
 class float3x3 {
