@@ -17,15 +17,6 @@ SIFT is a classic, widely used feature extractor. That makes it a great testbed 
 
 ---
 
-## Scope & philosophy
-
-- **Evidence over anecdotes.** Every optimization should come with timing, occupancy, and memory metrics gathered from NVIDIA Nsight tools.
-- **One change at a time.** Make improvements incrementally and attribute gains (or regressions) to specific diffs.
-- **Readable kernels.** Favor maintainable code with comments explaining the *why*, not only the *what*.
-
----
-
-
 ## Compatibility
 
 - **CUDA**: Tested with **CUDA 11.8**.  
