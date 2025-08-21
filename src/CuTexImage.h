@@ -67,7 +67,7 @@ public:
 	inline int GetImgNumChannels(){ return _numChannel; }
 
 
-private:
+public:
 	void*		_cuData;
 	cudaArray*	_cuData2D;
 	int			_numChannel;

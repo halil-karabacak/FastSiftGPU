@@ -6,40 +6,60 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_STANDARD 14)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+foreach(cfg DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
+  string(TOUPPER ${cfg} CFG)
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${CFG} ${CMAKE_BINARY_DIR}/lib)
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${CFG} ${CMAKE_BINARY_DIR}/lib)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CFG} ${CMAKE_BINARY_DIR}/bin)
+endforeach()
+
 find_package(OpenCV REQUIRED)
 find_package(CUDAToolkit REQUIRED)
 
-file(GLOB SRC_CPP CONFIGURE_DEPENDS
-     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
-     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cxx")
-file(GLOB SRC_CU  CONFIGURE_DEPENDS
-     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cu")
-file(GLOB SRC_HDR CONFIGURE_DEPENDS
-     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
-     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp")
+file(GLOB SRC_CPP CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cxx")
+file(GLOB SRC_CU  CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cu")
+file(GLOB SRC_HDR CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"  "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp")
 
-add_library(SiftGPU ${SRC_CPP} ${SRC_CU} ${SRC_HDR})
+add_library(SiftGPU STATIC ${SRC_CPP} ${SRC_CU} ${SRC_HDR})
 
 target_include_directories(SiftGPU
-    PUBLIC
-        ${OpenCV_INCLUDE_DIRS}
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-        $<INSTALL_INTERFACE:include>)
+  PUBLIC
+    ${OpenCV_INCLUDE_DIRS}
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<INSTALL_INTERFACE:include>)
 
 target_link_libraries(SiftGPU
-    PUBLIC
-        ${OpenCV_LIBS}
-        CUDA::cudart)
+  PUBLIC
+    ${OpenCV_LIBS}
+    cudart
+    cudadevrt)
 
 set_target_properties(SiftGPU PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-    CUDA_RUNTIME_LIBRARY      Shared
-    POSITION_INDEPENDENT_CODE ON)
+  CUDA_SEPARABLE_COMPILATION ON
+  CUDA_RUNTIME_LIBRARY      Shared
+  POSITION_INDEPENDENT_CODE ON)
 
 if(MSVC)
   target_compile_definitions(SiftGPU PRIVATE _CRT_SECURE_NO_WARNINGS NOMINMAX)
 endif()
 
-add_executable(SiftExecutable ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+set(STUB_CU "${CMAKE_CURRENT_BINARY_DIR}/__cuda_stub__.cu")
+file(WRITE "${STUB_CU}" "__global__ void __siftgpu_stub_kernel__(){}")
 
-target_link_libraries(SiftExecutable PRIVATE SiftGPU)
+add_executable(SiftExecutable
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+  "${STUB_CU}" 
+)
+
+set_target_properties(SiftExecutable PROPERTIES
+  CUDA_SEPARABLE_COMPILATION ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS ON
+)
+
+target_link_libraries(SiftExecutable PRIVATE
+  SiftGPU
+  cudart
+  cudadevrt)

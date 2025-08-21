@@ -31,7 +31,7 @@ int GlobalUtil::_MaxFilterWidth = -1;	//maximum filter width, use when GPU is no
 int GlobalUtil::_SubpixelLocalization = 1; //sub-pixel and sub-scale localization 	
 int	GlobalUtil::_MaxOrientation = 2;	//whether we find multiple orientations for each feature 
 int	GlobalUtil::_OrientationPack2 = 0;  //use one float to store two orientations
-float GlobalUtil::_MaxFeaturePercent = 0.005f;//at most 0.005 of all pixels
+float GlobalUtil::_MaxFeaturePercent = 0.05f;//at most 0.005 of all pixels
 int	GlobalUtil::_MaxLevelFeatureNum = 4096; //maximum number of features of a level
 
 //hardware parameter,   automatically retrieved
