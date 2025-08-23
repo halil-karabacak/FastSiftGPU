@@ -127,7 +127,7 @@ void SiftParam::ParseSiftParam()
 
 	if (_dog_level_num == 0) _dog_level_num = 3;
 	if (_level_max == 0) _level_max = _dog_level_num + 1;
-	if (_sigma0 == 0.0f) _sigma0 = 1.6f * powf(2.0f, 1.0f / _dog_level_num);
+	if (_sigma0 == 0.0f) _sigma0 = 1.1f * powf(2.0f, 1.0f / _dog_level_num); // By changing _sigma0, we can detect smaller keypoints, but it might be noisy.
 	if (_sigman == 0.0f) _sigman = 0.5f;
 
 
@@ -160,12 +160,12 @@ void SiftParam::ParseSiftParam()
 		_sigma[i - _level_min - 1] = dsigma0 * powf(_sigmak, float(i));
 	}
 
-	if (_dog_threshold == 0)	_dog_threshold = 0.02f / _dog_level_num;
-	if (_edge_threshold == 0) _edge_threshold = 10.0f;
+	if (_dog_threshold == 0)	_dog_threshold = 0.02f / _dog_level_num; // Decreasing this allows for more keypoint detection but new point might come out of noise.
+	if (_edge_threshold == 0) _edge_threshold = 6.0f; // Increasing this allows for more keypoint detection but localization of keypoints becomes worse.
 
 	std::vector<float> sigmas;
-	sigmas.push_back(GetInitialSmoothSigma(GlobalUtil::_octave_min_default));
-	for (int i = _level_min + 1; i <= _level_max; i++) {
+	sigmas.push_back(GetInitialSmoothSigma(GlobalUtil::_octave_min_default)); // This is dumb but it is done to use a smoother level 0 so we can detect keypoints in level 1.
+	for (int i = _level_min + 1; i < _level_max; i++) {
 		sigmas.push_back(_sigma[i]);
 	}
 	ProgramCU::InitFilterKernels(sigmas, m_filterWidths);

@@ -5,10 +5,6 @@
 
 #include <iostream>
 #include "cudaUtil.h"
-#include <math_constants.h>
-#ifndef MINF
-#define MINF (-CUDART_INF_F)
-#endif
 
 //////////////////////////////
 // float2x2

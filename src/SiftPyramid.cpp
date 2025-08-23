@@ -20,6 +20,8 @@
 //	Please send BUG REPORTS to ccwu@cs.unc.edu
 //
 ////////////////////////////////////////////////////////////////////////////
+
+
 #include <string.h>
 #include <iostream>
 #include <iomanip>
@@ -92,19 +94,19 @@ void SiftPyramid::BuildPyramid(float* d_data)
 			_inputTex->setImageData(_pyramid_width, _pyramid_height, 1, d_data);
 			//ConvertInputToCU(input);
 
-			if (i == 0)
-			{
-				ProgramCU::FilterImage(tex, _inputTex, buf,
-					param.m_filterWidths[0], 0);
-			}
-			else
-			{
-				if (i < 0)	ProgramCU::SampleImageU(tex, _inputTex, -i);
-				else		ProgramCU::SampleImageD(tex, _inputTex, i);
+			//if (i == 0)
+			//{
+			ProgramCU::FilterImage(tex, _inputTex, buf,
+				param.m_filterWidths[0], 0);
+			//}
+			//else // Not really using this part
+			//{
+			//	if (i < 0)	ProgramCU::SampleImageU(tex, _inputTex, -i);
+			//	else		ProgramCU::SampleImageD(tex, _inputTex, i);
 
-				ProgramCU::FilterImage(tex, tex, buf,
-					param.m_filterWidths[0], 0);
-			}
+			//	ProgramCU::FilterImage(tex, tex, buf,
+			//		param.m_filterWidths[0], 0);
+			//}
 		}
 		else
 		{
@@ -367,15 +369,19 @@ void SiftPyramid::DetectKeypoints(const float* d_depthData)
 
 	for (int i = _octave_min; i < _octave_min + _octave_num; i++)
 	{
-		CuTexImage * dog = GetBaseLevel(i, DATA_DOG) + 2;
+		CuTexImage * dog = GetBaseLevel(i, DATA_DOG) + 2; // Start from level 2
 		CuTexImage * key = GetBaseLevel(i, DATA_KEYPOINT) + 2;
-		for (int j = param._level_min + 2; j < param._level_max; j++, dog++)
+		float octave_scaled_edge_th = param._edge_threshold * (i + 1);
+		for (int j = param._level_min + 2; j < param._dog_level_num; j++, dog++) // Considers levels 1, 2, and 3
 		{
 			int featureOctLevelIndex = (i - _octave_min) * param._dog_level_num + j - 1;
 			float keyLocScale = os * (1 << (featureOctLevelIndex / param._dog_level_num));
+			//std::cout << "octave = " << i << ", level = " << j << ", keyLocScale = " << keyLocScale << std::endl;
+			float level_scaled_dog_th = param._dog_threshold * pow(0.9, j + 1);
+			// Scale the 
 			//input, dog, dog + 1, dog -1
 			//output, key
-			ProgramCU::ComputeKEY(dog, key, param._dog_threshold, param._edge_threshold, &_featureTexRaw[featureOctLevelIndex], d_featureCount, featureOctLevelIndex,
+			ProgramCU::ComputeKEY(dog, key, level_scaled_dog_th, octave_scaled_edge_th, &_featureTexRaw[featureOctLevelIndex], d_featureCount, featureOctLevelIndex,
 				keyLocScale, keyLocOffset, d_depthData, GlobalUtil::_SiftDepthMin, GlobalUtil::_SiftDepthMax);
 		}
 	}

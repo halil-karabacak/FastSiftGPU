@@ -1,5 +1,4 @@
-
-#include <device_functions.h>
+#pragma once
 
 #include "cuda_SimpleMatrixUtil.h"
 

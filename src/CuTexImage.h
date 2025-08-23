@@ -21,6 +21,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 
+#include <string>
 #ifndef CU_TEX_IMAGE_H
 #define CU_TEX_IMAGE_H
 
@@ -59,6 +60,7 @@ public:
 	void CopyFromHost(const void* buf);
 	void CopyToDevice(CuTexImage* other) const;
 	static int DebugCopyToTexture2D();
+
 	
 	void Memset(int value = 0);
 	inline int GetImgWidth(){ return _imgWidth; }
@@ -67,7 +69,7 @@ public:
 	inline int GetImgNumChannels(){ return _numChannel; }
 
 
-public:
+private:
 	void*		_cuData;
 	cudaArray*	_cuData2D;
 	int			_numChannel;

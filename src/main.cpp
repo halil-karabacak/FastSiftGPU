@@ -7,6 +7,8 @@
 #include <stdexcept>
 #include <vector>
 #include <string>
+#include <SiftCameraParams.h>
+extern "C" void updateConstantSiftCameraParams(const SiftCameraParams & params);
 
 static SiftGPU* g_sift = nullptr;
 
@@ -25,20 +27,11 @@ unsigned int GetKeyPointsAndDescriptorsCUDA(
     return numKeypoints;
 }
 
-#define CUDA_CHECK(ans) do { cudaAssert((ans), __FILE__, __LINE__); } while(0)
-inline void cudaAssert(cudaError_t code, const char* file, int line)
-{
-    if (code != cudaSuccess) {
-        std::cerr << "CUDA Error: " << cudaGetErrorString(code)
-            << " at " << file << ":" << line << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-}
-
 int main(int argc, char** argv)
 {
     try {
-        const std::string imgPath = "D:/dev/SiftGPU/data/640-1.jpg";
+        // C:/Users/Kivi Technologies/Documents/KIVI_IOS/Data/halil_upper/Inputs/20/bgr.png
+        const std::string imgPath = "../data/640-1.jpg";
 
         cv::Mat img = cv::imread(imgPath, cv::IMREAD_COLOR);
 
@@ -59,26 +52,49 @@ int main(int argc, char** argv)
         float* d_intensity = nullptr;
         float* d_depth = nullptr;
 
-        CUDA_CHECK(cudaMalloc(&d_intensity, bytes));
-        CUDA_CHECK(cudaMalloc(&d_depth, bytes));
+        cudaMalloc(&d_intensity, bytes);
+        cudaMalloc(&d_depth, bytes);
 
-        CUDA_CHECK(cudaMemcpy(d_intensity, gray32f.ptr<float>(0), bytes, cudaMemcpyHostToDevice));
-        CUDA_CHECK(cudaMemcpy(d_depth, depth32f.ptr<float>(0), bytes, cudaMemcpyHostToDevice));
+        cudaMemcpy(d_intensity, gray32f.ptr<float>(), bytes, cudaMemcpyHostToDevice);
+        cudaMemcpy(d_depth, depth32f.ptr<float>(), bytes, cudaMemcpyHostToDevice);
 
         g_sift = new SiftGPU();
         g_sift->SetParams(W, H, false, 150, -10.0f, 110.0f);
         g_sift->InitSiftGPU();
 
-        RunFeatureDetection(d_intensity, d_depth);
+        const unsigned int maxKp = 2000;
 
         SIFTImageGPU siftImage;
-        const unsigned int maxKp = 2000;
+        SIFTKeyPoint* d_allKeypoints = nullptr;
+        SIFTKeyPointDesc* d_allDescs = nullptr;
+        cudaMalloc(&d_allKeypoints, maxKp * sizeof(SIFTKeyPoint));
+        cudaMalloc(&d_allDescs, maxKp * sizeof(SIFTKeyPointDesc));
+
+
+        siftImage.d_keyPoints = d_allKeypoints;
+        siftImage.d_keyPointDescs = d_allDescs;
+
+        SiftCameraParams siftCameraParams;
+        siftCameraParams.m_depthWidth = W;
+        siftCameraParams.m_depthHeight = H;
+        siftCameraParams.m_intensityWidth = W;
+        siftCameraParams.m_intensityHeight = H;
+        siftCameraParams.m_minKeyScale = 0.000001f;
+        updateConstantSiftCameraParams(siftCameraParams);
+
+        
+        int success = RunFeatureDetection(d_intensity, d_depth);
+        if (!success)
+        {
+            throw std::exception("Error running SIFT detection");
+        }
+
         unsigned int numKp = GetKeyPointsAndDescriptorsCUDA(siftImage, d_depth, maxKp);
 
-        std::cout << "Detected keypoints (no depth eliminated with [90,110]): " << numKp << std::endl;
+        std::cout << "Detected keypoints: " << numKp << std::endl;
 
-        CUDA_CHECK(cudaFree(d_intensity));
-        CUDA_CHECK(cudaFree(d_depth));
+        cudaFree(d_intensity);
+        cudaFree(d_depth);
         delete g_sift;
         g_sift = nullptr;
 

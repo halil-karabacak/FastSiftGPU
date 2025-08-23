@@ -24,19 +24,22 @@
 #include <vector>
 #include <cassert>
 #include <cuda_runtime.h>
-
+#include <cuda.h>
 
 #include "CuTexImage.h"
 #include "ProgramCU.h"
 #include "GlobalUtil.h"
 #include "CUDATimer.h"
+#include "GlobalDefines.h"
 
 #include "SiftCameraParams.h"
+#define MINF __int_as_float(0xff800000)
+
 
 
 //----------------------------------------------------------------
 //Begin SiftGPU setting section.
-#define MAX_MATCHES_PER_IMAGE_PAIR_RAW 300
+
 // sift params
 #define ORIENTATION_WINDOW_FACTOR 2.0f
 #define ORINETATION_GAUSSIAN_FACTOR 1.5f
@@ -956,7 +959,7 @@ void __global__ ComputeOrientation_Kernel(float4* d_list,
 			const unsigned int p = (tidx + 1) % 36;
 			target[tidx] = (source[m] + source[c] + source[p])*one_third;
 
-			__syncthreads();
+			__threadfence();
 			volatile float *tmp = source;
 			source = target;
 			target = tmp;
@@ -1067,8 +1070,9 @@ void __global__ ComputeOrientation_Kernel(float4* d_list,
 	__syncthreads();
 	if (tidx == 0) {
 		weights[maxIndex] = -1.0f;
-		__syncthreads();
+		
 	}
+        __syncthreads();
 
 	// 2nd reduction to compute 2nd max weight
 	for (unsigned int stride = COMPUTE_ORIENTATION_BLOCK / 2; stride > 0; stride /= 2) {
@@ -1205,6 +1209,7 @@ void __global__ ComputeDescriptor_Kernel(float4* d_des, int num, int width, int 
 				if (theta < 0) theta += 8.0f;
 				float fo = floor(theta);
 				int fidx = fo;
+				// Weights for interpolating the values to the upper and lower bin
 				float weight1 = fo + 1.0f - theta;
 				float weight2 = theta - fo;
 
@@ -1297,11 +1302,13 @@ void __global__ ComputeDescriptorRECT_Kernel(float4* d_des, int num, int width, 
 //const unsigned int warpSize = 32;
 __inline__ __device__
 float warpAllReduceSum(float val) {
+	unsigned mask = __activemask();  // Get the active mask of the warp
 	for (int offset = 32 / 2; offset > 0; offset /= 2) {
-		val += __shfl_xor(val, offset, 32);
+		val += __shfl_xor_sync(mask, val, offset, 32);
 	}
 	return val;
 }
+
 
 void __global__ NormalizeDescriptor_Kernel(float4* d_des, int num)
 {
@@ -1347,7 +1354,7 @@ void ProgramCU::ComputeDescriptor(CuTexImage*list, CuTexImage* got, float* d_out
 	list->BindTexture(texDataF4);
 	int block_width = DESCRIPTOR_COMPUTE_BLOCK_SIZE;
 
-	if (rect)
+	if (rect) // rect is 0 hardcoded!
 	{
 		printf("ERROR");
 		printf(__FUNCTION__);
